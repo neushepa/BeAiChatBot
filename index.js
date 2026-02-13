@@ -2,17 +2,17 @@ import 'dotenv/config';
 import express from 'express';
 import multer from 'multer';
 import { GoogleGenAI } from '@google/genai';
-import cors from 'cors'; // <-- TAMBAHKAN INI
+import cors from 'cors';
 
 const app = express();
-app.use(cors()); // <-- TAMBAHKAN INI (Agar frontend bisa akses API)
+app.use(cors());
 
 const upload = multer();
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 const GEMINI_MODEL = "gemini-2.5-flash";
 
-// --- TAMBAHKAN INSTRUKSI SISTEM DI SINI ---
+// ---  INSTRUKSI SISTEM DI SINI ---
 const SMK_SYSTEM_PROMPT = `
 Anda adalah "Skye AI", asisten virtual resmi SMK Skye Digipreneur. 
 Tugas Anda adalah menjadi konsultan pendidikan bagi calon siswa, siswa aktif, dan orang tua.
@@ -42,6 +42,10 @@ BERIKUT ADALAH PANDUAN UTAMA ANDA:
 `;
 app.use(express.json());
 
+app.get('/', (req, res) => {
+    res.send('<h1>Server Is Running !</h1>');
+});
+
 const PORT = 3000;
 app.listen(PORT, () => console.log(`Server ready on http://localhost:${PORT}`));
 
@@ -51,7 +55,6 @@ app.post('/generate-text', async(req, res) => {
     try {
         const response = await ai.models.generateContent({
             model: GEMINI_MODEL,
-            // Gabungkan Prompt Sistem dengan Prompt User agar AI tidak keluar jalur
             contents: `${SMK_SYSTEM_PROMPT}\n\nUser: ${prompt}` 
         });
         res.status(200).json({ result: response.text });
@@ -69,7 +72,6 @@ app.post('/generate-from-image', upload.single('image'), async(req, res) => {
         const response = await ai.models.generateContent({
             model: GEMINI_MODEL,
             contents: [
-                // Menambahkan instruksi sistem ke dalam array contents
                 { text: SMK_SYSTEM_PROMPT, type: 'text' }, 
                 { text: prompt, type: 'text' },
                 { inlineData: { data: base64Image, mimeType: req.file.mimetype }}
@@ -110,7 +112,7 @@ app.post('/generate-from-audio', upload.single('audio'), async(req, res) => {
         const response = await ai.models.generateContent({
             model: GEMINI_MODEL,
             contents: [
-                { text: SMK_SYSTEM_PROMPT, type: 'text' }, // Pagar SMK
+                { text: SMK_SYSTEM_PROMPT, type: 'text' },
                 { text: prompt ?? 'Tolong buatkan transkrip dari audio berikut', type: 'text' },
                 { inlineData: { data: base64Audio, mimeType: req.file.mimetype }}
             ]
