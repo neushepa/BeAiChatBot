@@ -2,7 +2,7 @@ import 'dotenv/config';
 import express from 'express';
 import multer from 'multer';
 import { GoogleGenAI } from '@google/genai';
-import cors from 'cors';
+import cors from 'cors'; 
 
 const app = express();
 app.use(cors());
@@ -12,7 +12,7 @@ const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 const GEMINI_MODEL = "gemini-2.5-flash";
 
-// ---  INSTRUKSI SISTEM DI SINI ---
+// --- INSTRUKSI SISTEM ---
 const SMK_SYSTEM_PROMPT = `
 Anda adalah "Skye AI", asisten virtual resmi SMK Skye Digipreneur. 
 Tugas Anda adalah menjadi konsultan pendidikan bagi calon siswa, siswa aktif, dan orang tua.
@@ -46,7 +46,7 @@ app.get('/', (req, res) => {
     res.send('<h1>Server Is Running !</h1>');
 });
 
-const PORT = 3000;
+const PORT = 3070;
 app.listen(PORT, () => console.log(`Server ready on http://localhost:${PORT}`));
 
 app.post('/generate-text', async(req, res) => {
@@ -65,15 +65,16 @@ app.post('/generate-text', async(req, res) => {
 });
 
 app.post('/generate-from-image', upload.single('image'), async(req, res) => {
-    const { prompt } = req.body;
-    const base64Image = req.file.buffer.toString('base64');
+    if (!req.file) return res.status(400).json({ message: "File image tidak ditemukan. Pastikan key di Postman adalah 'image'" });
 
+    const { prompt } = req.body;
     try {
+        const base64Image = req.file.buffer.toString('base64');
         const response = await ai.models.generateContent({
             model: GEMINI_MODEL,
             contents: [
                 { text: SMK_SYSTEM_PROMPT, type: 'text' }, 
-                { text: prompt, type: 'text' },
+                  { text: prompt, type: 'text' },
                 { inlineData: { data: base64Image, mimeType: req.file.mimetype }}
             ]
         });
@@ -85,14 +86,15 @@ app.post('/generate-from-image', upload.single('image'), async(req, res) => {
 });
 
 app.post('/generate-from-document', upload.single('document'), async(req, res) => {
-    const { prompt } = req.body;
-    const base64Document = req.file.buffer.toString('base64');
+    if (!req.file) return res.status(400).json({ message: "File document tidak ditemukan. Pastikan key di Postman adalah 'document'" });
 
+    const { prompt } = req.body;
     try {
+        const base64Document = req.file.buffer.toString('base64');
         const response = await ai.models.generateContent({
             model: GEMINI_MODEL,
             contents: [
-                { text: SMK_SYSTEM_PROMPT, type: 'text' }, // Pagar SMK
+                { text: SMK_SYSTEM_PROMPT, type: 'text' },
                 { text: prompt ?? 'Tolong buat ringkasan dari dokumen berikut', type: 'text' },
                 { inlineData: { data: base64Document, mimeType: req.file.mimetype }}
             ]
@@ -105,10 +107,11 @@ app.post('/generate-from-document', upload.single('document'), async(req, res) =
 });
 
 app.post('/generate-from-audio', upload.single('audio'), async(req, res) => {
-    const { prompt } = req.body;
-    const base64Audio = req.file.buffer.toString('base64');
+    if (!req.file) return res.status(400).json({ message: "File audio tidak ditemukan. Pastikan key di Postman adalah 'audio'" });
 
+    const { prompt } = req.body;
     try {
+        const base64Audio = req.file.buffer.toString('base64');
         const response = await ai.models.generateContent({
             model: GEMINI_MODEL,
             contents: [
